@@ -1,4 +1,4 @@
-(defproject io.github.rads/dependency "1.0.0-SNAPSHOT"
+(defproject io.github.rads/dependency "1.0.0-1"
   :description "A data structure for representing dependency graphs"
   :url "https://github.com/rads/dependency"
   :license {:name "Eclipse Public License"

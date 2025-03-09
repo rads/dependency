@@ -2,7 +2,7 @@
  :deps {}
  :aliases
  {:neil
-  {:project {:version "1.0.0-SNAPSHOT"
+  {:project {:version "1.0.0-1"
              :name io.github.rads/dependency}}
 
   :dev
