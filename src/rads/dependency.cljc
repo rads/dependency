@@ -8,46 +8,13 @@
 
 (ns ^{:author "Stuart Sierra"
       :doc "Bidirectional graphs of dependencies and dependent objects."}
-  com.stuartsierra.dependency
+  rads.dependency
   (:require [clojure.set :as set]))
-
-(defprotocol DependencyGraph
-  (immediate-dependencies [graph node]
-    "Returns the set of immediate dependencies of node.")
-  (immediate-dependents [graph node]
-    "Returns the set of immediate dependents of node.")
-  (transitive-dependencies [graph node]
-    "Returns the set of all things which node depends on, directly or
-    transitively.")
-  (transitive-dependencies-set [graph node-set]
-    "Returns the set of all things which any node in node-set depends
-    on, directly or transitively.")
-  (transitive-dependents [graph node]
-    "Returns the set of all things which depend upon node, directly or
-    transitively.")
-  (transitive-dependents-set [graph node-set]
-    "Returns the set of all things which depend upon any node in
-    node-set, directly or transitively.")
-  (nodes [graph]
-    "Returns the set of all nodes in graph."))
-
-(defprotocol DependencyGraphUpdate
-  (depend [graph node dep]
-    "Returns a new graph with a dependency from node to dep (\"node depends
-    on dep\"). Forbids circular dependencies.")
-  (remove-edge [graph node dep]
-    "Returns a new graph with the dependency from node to dep removed.")
-  (remove-all [graph node]
-    "Returns a new dependency graph with all references to node removed.")
-  (remove-node [graph node]
-    "Removes the node from the dependency graph without removing it as a
-    dependency of other nodes. That is, removes all outgoing edges from
-    node."))
 
 (defn- remove-from-map [amap x]
   (reduce (fn [m [k vs]]
-	    (assoc m k (disj vs x)))
-	  {} (dissoc amap x)))
+            (assoc m k (disj vs x)))
+          {} (dissoc amap x)))
 
 (defn- transitive
   "Recursively expands the set of dependency relationships starting
@@ -66,49 +33,71 @@
 
 (def set-conj (fnil conj #{}))
 
-(defrecord MapDependencyGraph [dependencies dependents]
-  DependencyGraph
-  (immediate-dependencies [graph node]
-    (get dependencies node #{}))
-  (immediate-dependents [graph node]
-    (get dependents node #{}))
-  (transitive-dependencies [graph node]
-    (transitive dependencies #{node}))
-  (transitive-dependencies-set [graph node-set]
-    (transitive dependencies node-set))
-  (transitive-dependents [graph node]
-    (transitive dependents #{node}))
-  (transitive-dependents-set [graph node-set]
-    (transitive dependents node-set))
-  (nodes [graph]
-    (clojure.set/union (set (keys dependencies))
-                       (set (keys dependents))))
-  DependencyGraphUpdate
-  (depend [graph node dep]
+(defn immediate-dependencies [graph node]
+  (let [{:keys [dependencies]} graph]
+    (get dependencies node #{})))
+
+(defn immediate-dependents [graph node]
+  (let [{:keys [dependents]} graph]
+    (get dependents node #{})))
+
+(defn transitive-dependencies [graph node]
+  (let [{:keys [dependencies]} graph]
+    (transitive dependencies #{node})))
+
+(defn transitive-dependencies-set [graph node-set]
+  (let [{:keys [dependencies]} graph]
+    (transitive dependencies node-set)))
+
+(defn transitive-dependents [graph node]
+  (let [{:keys [dependents]} graph]
+    (transitive dependents #{node})))
+
+(defn transitive-dependents-set [graph node-set]
+  (let [{:keys [dependents]} graph]
+    (transitive dependents node-set)))
+
+(defn nodes [graph]
+  (let [{:keys [dependencies dependents]} graph]
+    (set/union (set (keys dependencies))
+               (set (keys dependents)))))
+
+(defn- ->graph [dependencies dependents]
+  {:dependencies dependencies
+   :dependents dependents})
+
+(defn depend [graph node dep]
+  (let [{:keys [dependencies dependents]} graph]
     (when (or (= node dep) (depends? graph dep node))
       (throw (ex-info (str "Circular dependency between "
                            (pr-str node) " and " (pr-str dep))
                       {:reason ::circular-dependency
                        :node node
                        :dependency dep})))
-    (MapDependencyGraph.
-     (update-in dependencies [node] set-conj dep)
-     (update-in dependents [dep] set-conj node)))
-  (remove-edge [graph node dep]
-    (MapDependencyGraph.
-     (update-in dependencies [node] disj dep)
-     (update-in dependents [dep] disj node)))
-  (remove-all [graph node]
-    (MapDependencyGraph.
-     (remove-from-map dependencies node)
-     (remove-from-map dependents node)))
-  (remove-node [graph node]
-    (MapDependencyGraph.
-     (dissoc dependencies node)
-     dependents)))
+    (->graph
+      (update-in dependencies [node] set-conj dep)
+      (update-in dependents [dep] set-conj node))))
+
+(defn remove-edge [graph node dep]
+  (let [{:keys [dependencies dependents]} graph]
+    (->graph
+      (update-in dependencies [node] disj dep)
+      (update-in dependents [dep] disj node))))
+
+(defn remove-all [graph node]
+  (let [{:keys [dependencies dependents]} graph]
+    (->graph
+      (remove-from-map dependencies node)
+      (remove-from-map dependents node))))
+
+(defn remove-node [graph node]
+  (let [{:keys [dependencies dependents]} graph]
+    (->graph
+      (dissoc dependencies node)
+      dependents)))
 
 (defn graph "Returns a new, empty, dependency graph." []
-  (->MapDependencyGraph {} {}))
+  (->graph {} {}))
 
 (defn depends?
   "True if x is directly or transitively dependent on y."
@@ -143,7 +132,7 @@
                          [add g]))]
         (recur (cons node sorted)
                (remove-node g' node)
-               (clojure.set/union (set more) (set add)))))))
+               (set/union (set more) (set add)))))))
 
 (def ^:private max-number
   #?(:clj Long/MAX_VALUE

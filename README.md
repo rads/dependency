@@ -22,15 +22,15 @@ use it without adding a dependency on all of tools.namespace.
 ## Releases and Dependency Information
 
 This library is released on [Clojars].
-Latest stable release is [1.0.0].
+Latest stable release is [1.0.0-1].
 
 [Leiningen] dependency information:
 
-    [com.stuartsierra/dependency "1.0.0"]
+    [io.github.rads/dependency "1.0.0-1"]
 
 [deps.edn] dependency information:
 
-    com.stuartsierra/dependency {:mvn/version "1.0.0"}
+    io.github.rads/dependency {:mvn/version "1.0.0-1"}
 
 [Clojars]: http://clojars.org/
 [Leiningen]: http://leiningen.org/
@@ -48,7 +48,7 @@ Clojure before 1.7.0.
 
 ## Usage
 
-    (require '[com.stuartsierra.dependency :as dep])
+    (require '[com.rads.dependency :as dep])
 
 Create a new dependency graph:
 

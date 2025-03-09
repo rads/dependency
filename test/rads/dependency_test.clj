@@ -6,9 +6,9 @@
 ;; this license. You must not remove this notice, or any other, from this
 ;; software.
 
-(ns com.stuartsierra.dependency-test
+(ns rads.dependency-test
   (:require [clojure.test :refer [deftest is are]]
-            [com.stuartsierra.dependency :refer :all]))
+            [rads.dependency :refer :all]))
 
 ;; building a graph like:
 ;;
